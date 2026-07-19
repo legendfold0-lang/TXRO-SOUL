@@ -5,18 +5,17 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_PATH = path.join(__dirname, 'shop_storage.json');
 
-// Initialize empty storage file if it doesn't exist
+// Safely initialize the storage file if it doesn't exist
 if (!fs.existsSync(DATA_PATH)) {
     fs.writeFileSync(DATA_PATH, JSON.stringify([], null, 4));
 }
 
-// Helper functions to read/write JSON
 function loadItems() {
     try {
         const data = fs.readFileSync(DATA_PATH, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        console.error('Error reading shop items file:', error);
+        console.error('❌ Shop Database Error [Read]:', error);
         return [];
     }
 }
@@ -26,25 +25,25 @@ function saveItems(items) {
         fs.writeFileSync(DATA_PATH, JSON.stringify(items, null, 4));
         return true;
     } catch (error) {
-        console.error('Error writing shop items file:', error);
+        console.error('❌ Shop Database Error [Write]:', error);
         return false;
     }
 }
 
-// Re-exporting an active getter for shopItems instead of a static array
+// Global active store getter wrapper
 export const shopItems = {
     get all() { return loadItems(); },
     filter: (cb) => loadItems().filter(cb),
     find: (cb) => loadItems().find(cb)
 };
 
-/* ============================
-   ADMIN ACTIONS
-============================ */
+/* ========================================================================
+   ADMIN FUNCTIONALITIES
+======================================================================== */
 
 /**
- * Stocks a new item or updates an existing one
- * @param {Object} itemData - The complete item configuration object
+ * Stocks a new item or updates an existing metadata block
+ * @param {Object} itemData - Structural configuration block
  */
 export function stockItem(itemData) {
     if (!itemData.id || !itemData.name || typeof itemData.price !== 'number') {
@@ -55,10 +54,10 @@ export function stockItem(itemData) {
     const existingIndex = items.findIndex(item => item.id === itemData.id);
 
     if (existingIndex !== -1) {
-        // Update existing item listing
+        // Overwrite existing configuration listing
         items[existingIndex] = { ...items[existingIndex], ...itemData };
     } else {
-        // Add new item to the store
+        // Push fresh entry
         items.push(itemData);
     }
 
@@ -66,23 +65,23 @@ export function stockItem(itemData) {
 }
 
 /**
- * Removes an item completely from the shop listings
- * @param {string} itemId - The unique ID of the item to remove
+ * Erases a physical configuration completely from shop catalogs
+ * @param {string} itemId - Target tracking tracking string
  */
 export function removeItem(itemId) {
     const items = loadItems();
     const filteredItems = items.filter(item => item.id !== itemId);
     
     if (items.length === filteredItems.length) {
-        return false; // Item wasn't found/nothing removed
+        return false; // Target ID mismatch / nothing removed
     }
 
     return saveItems(filteredItems);
 }
 
-/* ============================
-   USER ACTIONS & VALIDATION
-============================ */
+/* ========================================================================
+   UTILITIES & USER LOOKUPS
+======================================================================== */
 
 export function getItemById(itemId) {
     return loadItems().find(item => item.id === itemId);
@@ -109,38 +108,26 @@ export function validatePurchase(itemId, userData) {
     if (item.type === 'consumable' && item.maxQuantity) {
         const currentQuantity = inventory[itemId] || 0;
         if (currentQuantity >= item.maxQuantity) {
-            return { 
-                valid: false, 
-                reason: `You can only have a maximum of ${item.maxQuantity} ${item.name}s` 
-            };
+            return { valid: false, reason: `You can only hold a maximum of ${item.maxQuantity} ${item.name}s` };
         }
     }
 
-    if (item.type === 'upgrade' && item.maxLevel) {
+    if (item.type === 'upgrade') {
         if (upgrades[itemId]) {
-            return { 
-                valid: false, 
-                reason: `You've already purchased ${item.name}` 
-            };
+            return { valid: false, reason: `You have already maximized the permanent upgrade: ${item.name}` };
         }
     }
 
     if (item.type === 'tool') {
         const currentQuantity = inventory[itemId] || 0;
         if (itemId !== 'bank_note' && currentQuantity > 0) {
-            return { 
-                valid: false, 
-                reason: `You already have a ${item.name}` 
-            };
+            return { valid: false, reason: `You already own a ${item.name}` };
         }
     }
 
     if (item.type === 'role' && item.roleId) {
         if (userData.roles?.includes(item.roleId)) {
-            return { 
-                valid: false, 
-                reason: `You already have the ${item.name} role` 
-            };
+            return { valid: false, reason: `You already hold the ${item.name} custom server tier.` };
         }
     }
 
