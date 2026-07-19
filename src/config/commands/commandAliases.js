@@ -46,6 +46,12 @@ export const commandAliases = {
     'inventory': 'inventory',
     'inv': 'inventory',
     'items': 'inventory',
+    
+    // Admin Shop Management mappings
+    'shopmanage': 'shop-manage',
+    'shopmgr': 'shop-manage',
+    'smage': 'shop-manage',
+    'sm': 'shop-manage',
 
     'user': 'userinfo',
     'avatar': 'avatar',
@@ -117,6 +123,11 @@ export const subcommandAliases = {
     'n': 'next',
     'sc': 'setchannel',
 
+    // Subcommands for adding items to the database
+    'add': 'stock',
+    'create': 'stock',
+    'stock': 'stock',
+
     'a': 'add',
     'c': 'complete',
     'done': 'complete',
@@ -126,7 +137,6 @@ export const subcommandAliases = {
     'stop': 'end',
     'roll': 'reroll',
 
-    'add': 'add',
     'remove': 'remove',
     'list': 'list',
 };
