@@ -1,148 +1,95 @@
-export const shopItems = [
-    {
-        id: 'extra_work',
-        name: 'Extra Work Shift',
-        price: 5000,
-        description: 'Allows 1 extra use of the `/work` command.',
-        type: 'consumable',
-        maxQuantity: 5,
-cooldown: 86400000,
-        effect: {
-            type: 'command_boost',
-            command: 'work',
-            uses: 1
-        }
-    },
-    {
-        id: 'bank_upgrade_1',
-        name: 'Bank Upgrade I',
-        price: 15000,
-        description: 'Increases bank capacity and allows more funds to be deposited.',
-        type: 'upgrade',
-        maxLevel: 5,
-        effect: {
-            type: 'bank_capacity',
-            multiplier: 1.5
-        }
-    },
-    {
-        id: 'diamond_pickaxe',
-        name: 'Diamond Pickaxe',
-        price: 50000,
-        description: 'Increases yield from `/mine`',
-        type: 'tool',
-        durability: 100,
-        effect: {
-            type: 'mining_yield',
-            multiplier: 2.0
-        }
-    },
-    {
-        id: 'premium_role',
-        name: 'Premium Server Role',
-        price: 15000,
-        description: 'A special role granting a fancy color and a 10% daily bonus.',
-        type: 'role',
-roleId: null,
-        effect: {
-            type: 'daily_bonus',
-            multiplier: 1.1
-        }
-    },
-    {
-        id: 'lucky_clover',
-        name: 'Lucky Clover',
-        price: 10000,
-        description: 'Increases the chance of winning a higher payout on `/gamble` once.',
-        type: 'consumable',
-        maxQuantity: 10,
-        effect: {
-            type: 'gamble_boost',
-            multiplier: 1.5,
-            uses: 1
-        }
-    },
-    {
-        id: 'fishing_rod',
-        name: '🎣 Fishing Rod',
-        price: 5000,
-        description: 'Used for fishing commands',
-        type: 'tool',
-        durability: 100,
-        effect: {
-            type: 'fishing_yield',
-            multiplier: 1.0
-        }
-    },
-    {
-        id: 'pickaxe',
-        name: '⛏️ Pickaxe',
-        price: 7500,
-        description: 'Used for mining commands',
-        type: 'tool',
-        durability: 100,
-        effect: {
-            type: 'mining_yield',
-            multiplier: 1.2
-        }
-    },
-    {
-        id: 'laptop',
-        name: '💻 Laptop',
-        price: 15000,
-        description: 'Increases work earnings',
-        type: 'tool',
-        durability: 200,
-        effect: {
-            type: 'work_yield',
-            multiplier: 1.5
-        }
-    },
-    {
-        id: 'lucky_charm',
-        name: '🍀 Lucky Charm',
-        price: 10000,
-        description: 'Increases luck for gambling. Has 3 uses before being consumed.',
-        type: 'consumable',
-        maxQuantity: 10,
-        effect: {
-            type: 'gamble_boost',
-            multiplier: 1.3,
-            uses: 3
-        }
-    },
-    {
-        id: 'bank_note',
-        name: '📜 Bank Note',
-        price: 25000,
-        description: 'Increases bank capacity by 10,000. Can be purchased multiple times.',
-        type: 'tool',
-        durability: null,
-        effect: {
-            type: 'bank_capacity',
-            increase: 10000
-        }
-    },
-    {
-        id: 'personal_safe',
-        name: '🔒 Personal Safe',
-        price: 30000,
-        description: 'Protects your money from theft. Prevents others from robbing you.',
-        type: 'tool',
-        durability: null,
-        effect: {
-            type: 'robbery_protection',
-            protection: true
-        }
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DATA_PATH = path.join(__dirname, 'shop_storage.json');
+
+// Initialize empty storage file if it doesn't exist
+if (!fs.existsSync(DATA_PATH)) {
+    fs.writeFileSync(DATA_PATH, JSON.stringify([], null, 4));
+}
+
+// Helper functions to read/write JSON
+function loadItems() {
+    try {
+        const data = fs.readFileSync(DATA_PATH, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error reading shop items file:', error);
+        return [];
     }
-];
+}
+
+function saveItems(items) {
+    try {
+        fs.writeFileSync(DATA_PATH, JSON.stringify(items, null, 4));
+        return true;
+    } catch (error) {
+        console.error('Error writing shop items file:', error);
+        return false;
+    }
+}
+
+// Re-exporting an active getter for shopItems instead of a static array
+export const shopItems = {
+    get all() { return loadItems(); },
+    filter: (cb) => loadItems().filter(cb),
+    find: (cb) => loadItems().find(cb)
+};
+
+/* ============================
+   ADMIN ACTIONS
+============================ */
+
+/**
+ * Stocks a new item or updates an existing one
+ * @param {Object} itemData - The complete item configuration object
+ */
+export function stockItem(itemData) {
+    if (!itemData.id || !itemData.name || typeof itemData.price !== 'number') {
+        throw new Error('Invalid item data. Must include unique id, name, and numeric price.');
+    }
+
+    const items = loadItems();
+    const existingIndex = items.findIndex(item => item.id === itemData.id);
+
+    if (existingIndex !== -1) {
+        // Update existing item listing
+        items[existingIndex] = { ...items[existingIndex], ...itemData };
+    } else {
+        // Add new item to the store
+        items.push(itemData);
+    }
+
+    return saveItems(items);
+}
+
+/**
+ * Removes an item completely from the shop listings
+ * @param {string} itemId - The unique ID of the item to remove
+ */
+export function removeItem(itemId) {
+    const items = loadItems();
+    const filteredItems = items.filter(item => item.id !== itemId);
+    
+    if (items.length === filteredItems.length) {
+        return false; // Item wasn't found/nothing removed
+    }
+
+    return saveItems(filteredItems);
+}
+
+/* ============================
+   USER ACTIONS & VALIDATION
+============================ */
 
 export function getItemById(itemId) {
-    return shopItems.find(item => item.id === itemId);
+    return loadItems().find(item => item.id === itemId);
 }
 
 export function getItemsByType(type) {
-    return shopItems.filter(item => item.type === type);
+    return loadItems().filter(item => item.type === type);
 }
 
 export function getItemPrice(itemId) {
@@ -170,7 +117,6 @@ export function validatePurchase(itemId, userData) {
     }
 
     if (item.type === 'upgrade' && item.maxLevel) {
-        
         if (upgrades[itemId]) {
             return { 
                 valid: false, 
@@ -180,7 +126,6 @@ export function validatePurchase(itemId, userData) {
     }
 
     if (item.type === 'tool') {
-        
         const currentQuantity = inventory[itemId] || 0;
         if (itemId !== 'bank_note' && currentQuantity > 0) {
             return { 
