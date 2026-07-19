@@ -204,9 +204,11 @@ export const botConfig = {
   // =========================
   // SHOP SETTINGS
   // =========================
-  // Add shop defaults here when needed.
   shop: {
-
+    // Array of Role IDs allowed to manage dynamic shops (/shop-manage commands)
+    adminRoles: [], 
+    // If true, users with server-wide Administrator permissions bypass role checks
+    allowAdminBypass: true,
   },
 
   // =========================
@@ -499,8 +501,6 @@ export function validateConfig(config) {
   }
 
   if (process.env.NODE_ENV === 'production') {
-    // A full connection URL (DATABASE_URL / POSTGRES_URL) satisfies all Postgres
-    // requirements, matching how src/config/database/postgres.js resolves the pool config.
     const hasConnectionUrl = Boolean(process.env.POSTGRES_URL || process.env.DATABASE_URL);
 
     if (!hasConnectionUrl) {
@@ -622,10 +622,8 @@ export function getDefaultApplicationQuestions() {
 }
 
 export function getColor(path, fallback = "#99AAB5") {
-  
   if (typeof path === "number") return path;
   if (typeof path === "string" && path.startsWith("#")) {
-    
     return parseInt(path.replace("#", ""), 16);
   }
   const result = path
